@@ -16,7 +16,7 @@ namespace ArchiveGenerator
 
 		public sealed class OptimizationOptions
 		{
-			private bool mMergeDuplicateFiles = true;
+			private bool mMergeDuplicateFiles = false;
 			public bool MergeDuplicateFiles
 			{
 				get { return mMergeDuplicateFiles; }
