@@ -151,8 +151,8 @@ namespace ArchiveGenerator
 					tree.Files.Sort(
 					(a, b) =>
 					{
-						int ap = GetFilePriority(a.SourceFile.Extension);
-						int bp = GetFilePriority(b.SourceFile.Extension);
+						int ap = GetFilePriority(a.SourceFile);
+						int bp = GetFilePriority(b.SourceFile);
 						if (ap > bp)
 							return 1;
 						if (ap < bp)
@@ -164,7 +164,6 @@ namespace ArchiveGenerator
 					{
                         WriteStartAddingFile(v);
 						v.FileOffset = AddFile(strm, v.SourceFile, config);
-                        WriteEndAddingFile();
 					}
 
 					TreeCreationFinish();
@@ -181,135 +180,56 @@ namespace ArchiveGenerator
                 Console.Write("Adding " + f.FullName);
             }
 
-            private static void WriteEndAddingFile()
+            private static void WriteEndAddingFile(bool merged)
             {
-                Console.CursorLeft = Console.BufferWidth - 5;
-                Console.WriteLine("Done");
+                if (merged)
+                {
+                    Console.CursorLeft = Console.BufferWidth - 7;
+                    Console.WriteLine("Merged");
+                }
+                else
+                {
+                    Console.CursorLeft = Console.BufferWidth - 5;
+                    Console.WriteLine("Done");
+                }
             }
 
-			private static int GetFilePriority(string fileExtension)
+            private static Dictionary<string, int> FileExtensionPriorities;
+			private static int GetFilePriority(FileInfo file)
 			{
-				switch (fileExtension.ToLower())
-				{
-					case ".type":
-						return 0;
-					case ".highmaterial":
-						return 1;
-					case ".physics":
-						return 2;
-					case ".animationtree":
-						return 3;
-					case ".modelimport":
-						return 4;
-					case ".particle":
-						return 5;
-					case ".gui":
-						return 6;
-					case ".config":
-						return 7;
-					case ".map":
-						return 8;
-					case ".block":
-						return 9;
-					case ".language":
-						return 10;
-					case ".fontdefinition":
-						return 11;
-					case ".cg_hlsl":
-						return 12;
-					case ".program":
-						return 13;
-					case ".shaderbaseextension":
-						return 14;
-					case ".compositor":
-						return 15;
-					case ".m_aterial":
-					case ".material":
-						return 16;
-					case ".txt":
-						return 17;
-					case "":
-						return 18;
-
-					case ".dll":
-						return 50;
-
-					case ".data":
-						return 250;
-					case ".dat":
-						return 251;
-					case ".raw":
-						return 252;
-					case ".ttf":
-						return 253;
-
-					case ".mesh":
-						return 500;
-					case ".skeleton":
-						return 501;
-					case ".dae":
-						return 502;
-					case ".x":
-						return 503;
-					case ".max":
-						return 504;
-
-					case ".ogg":
-						return 750;
-					case ".wav":
-						return 751;
-
-					case ".ogv":
-						return 850;
-
-					case ".bmp":
-						return 1000;
-					case ".tga":
-						return 1001;
-					case ".cur":
-						return 1002;
-					case ".dds":
-						return 1003;
-					case ".jpg":
-						return 1004;
-					case ".png":
-						return 1005;
-
-					case ".shadercache":
-						return 1250;
-
-					case ".zip":
-						return 1500;
-
-					case ".bak":
-						return 1750;
-
-
-					default:
-						return 2000;
-				}
+                int p;
+                string fileExtension = file.Extension;
+                if (!FileExtensionPriorities.TryGetValue(fileExtension.ToLower(), out p))
+                    return FileExtensionPriorities.Count + 2000;
+                return p;
 			}
 
-			private static void TreeCreationInit(GeneratorOptions config)
-			{
-				if (config.Optimizations.MergeDuplicateFiles)
-					KnownFiles = new Dictionary<int, Tuple<FileInfo, long>>();
-				HashProvider = new SHA512Managed();
+            private static void TreeCreationInit(GeneratorOptions config)
+            {
+                if (config.Optimizations.MergeDuplicateFiles)
+                    KnownFiles = new Dictionary<int, Tuple<FileInfo, long>>();
+                HashProvider = new SHA512Managed();
                 CurFileNum = 0;
                 TotalFileCountWidth = TotalFileCount.ToString().Length;
-			}
-			private static void TreeCreationFinish()
+                FileExtensionPriorities = new Dictionary<string, int>(config.Optimizations.EmitOrder.Length);
+                for (int i = 0; i < config.Optimizations.EmitOrder.Length; i++)
+                {
+                    FileExtensionPriorities[config.Optimizations.EmitOrder[i].ToLower()] = i;
+                }
+            }
+
+            private static void TreeCreationFinish()
 			{
 				KnownFiles = null;
 				HashProvider = null;
                 CurFileNum = 0;
                 TotalFileCount = 0;
                 TotalFileCountWidth = 0;
+                FileExtensionPriorities = null;
 			}
 
 			private static Dictionary<int, Tuple<FileInfo, long>> KnownFiles;
 			private static HashAlgorithm HashProvider;
-
 			private static long AddFile(FileStream strm, FileInfo file, GeneratorOptions config)
 			{
 				if (!config.Optimizations.MergeDuplicateFiles)
@@ -320,7 +240,8 @@ namespace ArchiveGenerator
 						byte[] buf = new byte[file.Length];
 						fs.Read(buf, 0, buf.Length);
 						strm.Write(buf, 0, buf.Length);
-					}
+                    }
+                    WriteEndAddingFile(false);
 					return off;
 				}
 				else
@@ -336,16 +257,19 @@ namespace ArchiveGenerator
 					if (!KnownFiles.TryGetValue(hash, out kf))
 					{
 						KnownFiles.Add(hash, new Tuple<FileInfo, long>(file, off));
-						strm.Write(buf, 0, buf.Length);
+                        strm.Write(buf, 0, buf.Length);
+                        WriteEndAddingFile(false);
 					}
 					else if (!FileDataEqual(kf.ValA, file))
-					{
+                    {
+                        WriteEndAddingFile(false);
 						Console.WriteLine("Warning: Hash collision!");
-						strm.Write(buf, 0, buf.Length);
+                        strm.Write(buf, 0, buf.Length);
 					}
 					else
 					{
-						off = kf.ValB;
+                        off = kf.ValB;
+                        WriteEndAddingFile(true);
 					}
 					return off;
 				}

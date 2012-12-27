@@ -181,6 +181,7 @@ namespace ArchiveGenerator
 						break;
 
 					case "mergeduplicatefiles":
+                    case "mergeduplicates":
 					case "mergeduplicate":
 					case "merge":
 					case "m":
