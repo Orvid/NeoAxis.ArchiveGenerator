@@ -180,17 +180,52 @@ namespace ArchiveGenerator
                 Console.Write("Adding " + f.FullName);
             }
 
+			private static bool? mConsoleRedirectedCache;
+			private static bool ConsoleRedirected
+			{
+				get
+				{
+					if (mConsoleRedirectedCache != null)
+						return mConsoleRedirectedCache.Value;
+					bool b;
+					try
+					{
+						b = Console.CursorVisible && false;
+					}
+					catch
+					{
+						b = true;
+					}
+					mConsoleRedirectedCache = b;
+					return b;
+				}
+			}
+
             private static void WriteEndAddingFile(bool merged)
             {
                 if (merged)
                 {
-                    Console.CursorLeft = Console.BufferWidth - 7;
-                    Console.WriteLine("Merged");
+					if (!ConsoleRedirected)
+					{
+						Console.CursorLeft = Console.BufferWidth - 7;
+						Console.WriteLine("Merged");
+					}
+					else
+					{
+						Console.WriteLine("\t\tMerged");
+					}
                 }
                 else
                 {
-                    Console.CursorLeft = Console.BufferWidth - 5;
-                    Console.WriteLine("Done");
+					if (!ConsoleRedirected)
+					{
+						Console.CursorLeft = Console.BufferWidth - 5;
+						Console.WriteLine("Done");
+					}
+					else
+					{
+						Console.WriteLine("\t\tDone");
+					}
                 }
             }
 
@@ -198,9 +233,67 @@ namespace ArchiveGenerator
 			private static int GetFilePriority(FileInfo file)
 			{
                 int p;
-                string fileExtension = file.Extension;
-                if (!FileExtensionPriorities.TryGetValue(fileExtension.ToLower(), out p))
+				string fileExtension = file.Extension.ToLower();
+                if (!FileExtensionPriorities.TryGetValue(fileExtension, out p))
                     return FileExtensionPriorities.Count + 2000;
+				if (fileExtension == ".dds")
+				{
+					string n = Path.GetFileNameWithoutExtension(file.Name).ToLowerInvariant();
+					if (
+						n.EndsWith("normal") ||
+						n.EndsWith("normals") ||
+						n.EndsWith("n") ||
+						n.EndsWith("nrm") ||
+						n.EndsWith("normalmap") ||
+						n.EndsWith("normalsmap")
+					)
+					{
+						p += 1;
+					}
+					else if (
+						n.EndsWith("ao") ||
+						file.Directory.Name.ToLowerInvariant().EndsWith("ao")
+					)
+					{
+						p += 2;
+					}
+					else if (
+						n.EndsWith("spec") ||
+						n.EndsWith("s") ||
+						n.EndsWith("specular") ||
+						n.EndsWith("specularmap") ||
+						n.EndsWith("specmap")
+					)
+					{
+						p += 3;
+					}
+					else if (
+						n == "preview"
+					)
+					{
+						p += 4;
+					}
+					else if (
+						n.EndsWith("emission") 
+					)
+					{
+						p += 5;
+					}
+					else if (
+						n.EndsWith("height") ||
+						n.EndsWith("heightmap")
+					)
+					{
+						p += 6;
+					}
+					else if (
+						n.EndsWith("glow") ||
+						n.EndsWith("glowmap")
+					)
+					{
+						p += 7;
+					}
+				}
                 return p;
 			}
 
@@ -212,9 +305,12 @@ namespace ArchiveGenerator
                 CurFileNum = 0;
                 TotalFileCountWidth = TotalFileCount.ToString().Length;
                 FileExtensionPriorities = new Dictionary<string, int>(config.Optimizations.EmitOrder.Length);
-                for (int i = 0; i < config.Optimizations.EmitOrder.Length; i++)
+                for (int i = 0, i2 = 0; i < config.Optimizations.EmitOrder.Length; i++, i2++)
                 {
-                    FileExtensionPriorities[config.Optimizations.EmitOrder[i].ToLower()] = i;
+					string fe = config.Optimizations.EmitOrder[i].ToLower();
+                    FileExtensionPriorities[fe] = i2;
+					if (fe == ".dds")
+						i2 += 30;
                 }
             }
 
