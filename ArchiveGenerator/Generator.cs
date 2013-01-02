@@ -324,6 +324,23 @@ namespace ArchiveGenerator
                 FileExtensionPriorities = null;
 			}
 
+			private static bool Minifiable(FileInfo file)
+			{
+				switch (file.Extension)
+				{
+					case ".gui":
+					case ".type":
+					case ".highmaterial":
+					case ".physics":
+					case ".particle":
+					case ".map":
+					case ".modelimport":
+						return true;
+					default:
+						return false;
+				}
+			}
+
 			private static Dictionary<int, Tuple<FileInfo, long>> KnownFiles;
 			private static HashAlgorithm HashProvider;
 			private static long AddFile(FileStream strm, FileInfo file, GeneratorOptions config)
@@ -333,8 +350,13 @@ namespace ArchiveGenerator
 					long off = strm.Position;
 					using (var fs = file.OpenRead())
 					{
-						byte[] buf = new byte[file.Length];
-						fs.Read(buf, 0, buf.Length);
+						Stream ifs = fs;
+						if (config.Optimizations.MinifySerialized && Minifiable(file))
+						{
+							ifs = SerializedCleaner.CleanFile(fs);
+						}
+						byte[] buf = new byte[(int)ifs.Length];
+						ifs.Read(buf, 0, buf.Length);
 						strm.Write(buf, 0, buf.Length);
                     }
                     WriteEndAddingFile(false);
@@ -342,11 +364,17 @@ namespace ArchiveGenerator
 				}
 				else
 				{
-					byte[] buf = new byte[file.Length];
+					byte[] buf;// = new byte[file.Length];
 					long off = strm.Position;
 					using (var fs = file.OpenRead())
 					{
-						fs.Read(buf, 0, buf.Length);
+						Stream ifs = fs;
+						if (config.Optimizations.MinifySerialized && Minifiable(file))
+						{
+							ifs = SerializedCleaner.CleanFile(fs);
+						}
+						buf = new byte[(int)ifs.Length];
+						ifs.Read(buf, 0, buf.Length);
 					}
 					int hash = HashProvider.ComputeIntHash(buf);
 					Tuple<FileInfo, long> kf;
