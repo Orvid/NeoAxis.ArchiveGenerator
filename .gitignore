@@ -1,5 +1,6 @@
 .suo
 .csproj.user
+ArchiveProfile.app7
 bin
 obj
 NonCommercialLicense.sln
@@ -12,7 +13,20 @@ NonCommercialLicense.suo
 /GameEntities
 /GameEntities.Editor
 /MonoRuntimeLauncher
+/NeoAxisDeobfuscator
 /MyNativeDLL
 /WinFormsAppExample
 /WinFormsMultiViewAppExample
 /WPFAppExample
+
+/DecorativeObjectManager.Editor
+/GridPathFindSystem.Editor
+/HeightmapTerrain.Editor
+/MapSystem.Editor
+/MathEx.Editor
+/PhysicsSystem.Editor
+/RecastNavigationSystem.Editor
+/Renderer.Editor
+/UISystem.Editor
+/Utils.Editor
+/ZipArchive
