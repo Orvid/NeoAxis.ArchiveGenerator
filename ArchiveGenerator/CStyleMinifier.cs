@@ -694,6 +694,7 @@ namespace ArchiveGenerator
 				case '8':
 				case '9':
 				case '_':
+				case '(': // This is due to issues with macro definitions
 					return true;
 
 				default:

@@ -472,7 +472,7 @@ namespace ArchiveGenerator
 						{
 							if (SerializedMinifiable(file))// && file.Name == "PhysicsSystem.config")
 								ifs = NeoAxisSerializedFileMinifier.Minify(ifs);
-							else if (CStyleMinifiable(file))// && file.Name == "StdQuad_vp.cg_hlsl")
+							else if (CStyleMinifiable(file))// && file.Name == "Fxaa3_9.cg_hlsl")
 								ifs = CStyleMinifier.Minify(ifs);
 						}
 						buf = new byte[(int)ifs.Length];
@@ -484,9 +484,9 @@ namespace ArchiveGenerator
 						//        ofs.Write(buf, 0, buf.Length);
 						//    }
 						//}
-						//if (file.Name == "StdQuad_vp.cg_hlsl")
+						//if (file.Name == "Fxaa3_9.cg_hlsl")
 						//{
-						//    using (var ofs = new FileStream("Materials/Common/StdQuad_vp.minified.cg_hlsl", FileMode.Create))
+						//    using (var ofs = new FileStream("Materials/PostEffects/FXAA/Fxaa3_9.minified.cg_hlsl", FileMode.Create))
 						//    {
 						//        ofs.Write(buf, 0, buf.Length);
 						//    }

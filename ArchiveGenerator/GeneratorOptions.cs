@@ -183,7 +183,7 @@ namespace ArchiveGenerator
 				"min"
 			)]
 			[Description("If true, characters that aren't required are removed from some types of files.")]
-			[DefaultValue(false)]
+			[DefaultValue(true)]
 			public bool Minify;
 
 			[Configure]
