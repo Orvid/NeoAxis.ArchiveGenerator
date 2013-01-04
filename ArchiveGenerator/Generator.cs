@@ -29,6 +29,7 @@ namespace ArchiveGenerator
 				public readonly string FullName;
 				public readonly int Size;
 				public readonly FileInfo SourceFile;
+				public int InternalSize;
 				public long FileOffset;
 				public CompressionAlgorithm CompressionAlgorithm = CompressionAlgorithm.None;
 
@@ -78,6 +79,16 @@ namespace ArchiveGenerator
 				for (int i = 0; i < Files.Count; i++)
 				{
 					Array.Copy(BitConverter.GetBytes(Files[i].Size), 0, ret, i << 2, 4);
+				}
+				return ret;
+			}
+
+			public byte[] GetInternalLengthData()
+			{
+				byte[] ret = new byte[Files.Count << 2];
+				for (int i = 0; i < Files.Count; i++)
+				{
+					Array.Copy(BitConverter.GetBytes(Files[i].InternalSize), 0, ret, i << 2, 4);
 				}
 				return ret;
 			}
@@ -174,7 +185,10 @@ namespace ArchiveGenerator
 							return 1;
 						if (ap < bp)
 							return -1;
-						return StringComparer.CurrentCultureIgnoreCase.Compare(a.FullName, b.FullName);
+						int c = StringComparer.CurrentCultureIgnoreCase.Compare(a.SourceFile.Name, b.SourceFile.Name);
+						if (c == 0)
+							return StringComparer.CurrentCultureIgnoreCase.Compare(a.FullName, b.FullName);
+						return c;
 					});
 
 					foreach (var v in tree.Files)
@@ -311,6 +325,12 @@ namespace ArchiveGenerator
 					{
 						p += 7;
 					}
+					else if (
+						n.EndsWith("translucency")
+					)
+					{
+						p += 8;
+					}
 				}
                 return p;
 			}
@@ -400,6 +420,7 @@ namespace ArchiveGenerator
 					case ".material":
 					case ".txt":
 					case ".xml":
+					default:
 						var r = Compression.CompressData(dat, CompressionAlgorithm.LZF);
 						if (r != null)
 						{
@@ -410,8 +431,8 @@ namespace ArchiveGenerator
 						{
 							return dat;
 						}
-					default:
-						return dat;
+					//default:
+					//	return dat;
 				}
 			}
 
@@ -435,6 +456,7 @@ namespace ArchiveGenerator
 						byte[] buf = new byte[(int)ifs.Length];
 						ifs.Read(buf, 0, buf.Length);
 						strm.Write(buf, 0, buf.Length);
+						desc.InternalSize = buf.Length;
                     }
                     WriteEndAddingFile(false);
 					return off;
@@ -474,6 +496,7 @@ namespace ArchiveGenerator
 							buf = DoCompress(desc, buf);
 						}
 					}
+					desc.InternalSize = buf.Length;
 					int hash = HashProvider.ComputeIntHash(buf);
 					Tuple<FileInfo, long> kf;
 					if (!KnownFiles.TryGetValue(hash, out kf))
@@ -536,7 +559,11 @@ namespace ArchiveGenerator
 			aBldr.SetCustomAttribute(new CustomAttributeBuilder(typeof(CompilationRelaxationsAttribute).GetConstructor(new Type[] { typeof(int) }), new object[] { (int)CompilationRelaxations.NoStringInterning }));
 			aBldr.SetCustomAttribute(new CustomAttributeBuilder(typeof(AssemblyVersionAttribute).GetConstructor(new Type[] { typeof(string) }), new object[] { config.Version }));
 			aBldr.SetCustomAttribute(new CustomAttributeBuilder(typeof(AssemblyFileVersionAttribute).GetConstructor(new Type[] { typeof(string) }), new object[] { config.Version }));
+#if DEBUG
+			var modBldr = aBldr.DefineDynamicModule(config.TargetAssemblyName, config.TargetAssemblyName + ".dll", true);
+#else
 			var modBldr = aBldr.DefineDynamicModule(config.TargetAssemblyName, config.TargetAssemblyName + ".dll");
+#endif
 
 			#region Generate Archive Type
 			var asmTpBldr = modBldr.DefineType(config.TargetNamespace + ".CustomArchive", TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed, typeof(Archive));
@@ -555,6 +582,8 @@ namespace ArchiveGenerator
 						allCompressionField = asmTpBldr.DefineField("AllCompressions", typeof(byte[]), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
 					}
 				}
+				var initInternalLengthData = asmTpBldr.DefineInitializedData("InitData_InternalLength", tree.GetInternalLengthData(), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+				var allInternalLengthsField = asmTpBldr.DefineField("AllInternalLengths", typeof(int[]), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
 				var initLengthData = asmTpBldr.DefineInitializedData("InitData_Length", tree.GetLengthData(), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
 				var allLengthsField = asmTpBldr.DefineField("AllLengths", typeof(int[]), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
 				var initOffsetData = asmTpBldr.DefineInitializedData("InitData_Offset", tree.GetOffsetData(), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
@@ -611,6 +640,18 @@ namespace ArchiveGenerator
 					gen.DeclareLocal(typeof(int));
 					const int L_len = 3;
 					gen.DeclareLocal(typeof(int));
+
+
+					{
+#if !DisableArrayInit
+						gen.LoadInt((ulong)tree.Files.Count, 4, false);
+						gen.Emit(OpCodes.Newarr, typeof(int));
+						gen.Emit(OpCodes.Dup);
+						gen.Emit(OpCodes.Ldtoken, initInternalLengthData);
+						gen.Emit(OpCodes.Call, typeof(RuntimeHelpers).GetMethod("InitializeArray"));
+						gen.Emit(OpCodes.Stsfld, allInternalLengthsField);
+#endif
+					}
 
 					{
 #if !DisableArrayInit
@@ -904,7 +945,7 @@ namespace ArchiveGenerator
 					gen.DeclareLocal(typeof(int)); // idx
 
 					// len = AllLengths[idx = FileSwitchDictionary[inArchiveFileName]];
-					gen.Emit(OpCodes.Ldsfld, allLengthsField);
+					gen.Emit(OpCodes.Ldsfld, allInternalLengthsField);
 					gen.Emit(OpCodes.Ldsfld, fileSwitchDictionaryField);
 					gen.LoadParameter(P_inArchiveFileName);
 					gen.Emit(OpCodes.Call, typeof(Dictionary<string, int>).GetProperty("Item").GetGetMethod());

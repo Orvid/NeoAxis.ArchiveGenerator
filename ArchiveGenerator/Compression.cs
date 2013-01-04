@@ -155,7 +155,7 @@ namespace ArchiveGenerator
 						while ((++lit) != 0);
 					}
 				}
-				catch (IndexOutOfRangeException e)
+				catch (IndexOutOfRangeException)
 				{
 					return null;
 				}
