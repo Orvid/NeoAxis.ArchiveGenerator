@@ -5,6 +5,120 @@ namespace ArchiveGenerator
 {
 	public static class ILGeneratorExtensions
 	{
+		public static void Load(this ILGenerator gen, LocalBuilder local)
+		{
+			gen.LoadLocal(local.LocalIndex);
+		}
+
+		public static void Load(this ILGenerator gen, ParameterBuilder param)
+		{
+			gen.LoadParameter(param.Position);
+		}
+
+		public static void LoadThis(this ILGenerator gen)
+		{
+			gen.Emit(OpCodes.Ldarg_0);
+		}
+
+		public static void LoadLocal(this ILGenerator gen, int idx)
+		{
+			switch (idx)
+			{
+				case 0:
+					gen.Emit(OpCodes.Ldloc_0);
+					break;
+				case 1:
+					gen.Emit(OpCodes.Ldloc_1);
+					break;
+				case 2:
+					gen.Emit(OpCodes.Ldloc_2);
+					break;
+				case 3:
+					gen.Emit(OpCodes.Ldloc_3);
+					break;
+				default:
+					if (idx < byte.MaxValue)
+						gen.Emit(OpCodes.Ldloc_S, (byte)idx);
+					else
+						gen.Emit(OpCodes.Ldloc, idx);
+					break;
+			}
+		}
+
+		public static void LoadLocalAddress(this ILGenerator gen, int idx)
+		{
+			if (idx < byte.MaxValue)
+				gen.Emit(OpCodes.Ldloca_S, (byte)idx);
+			else
+				gen.Emit(OpCodes.Ldloca, idx);
+		}
+
+		public static void StoreLocal(this ILGenerator gen, int idx)
+		{
+			switch (idx)
+			{
+				case 0:
+					gen.Emit(OpCodes.Stloc_0);
+					break;
+				case 1:
+					gen.Emit(OpCodes.Stloc_1);
+					break;
+				case 2:
+					gen.Emit(OpCodes.Stloc_2);
+					break;
+				case 3:
+					gen.Emit(OpCodes.Stloc_3);
+					break;
+				default:
+					if (idx < byte.MaxValue)
+						gen.Emit(OpCodes.Stloc_S, (byte)idx);
+					else
+						gen.Emit(OpCodes.Stloc, idx);
+					break;
+			}
+		}
+
+		public static void LoadParameter(this ILGenerator gen, int idx)
+		{
+			switch (idx)
+			{
+				case 0:
+					gen.Emit(OpCodes.Ldarg_0);
+					break;
+				case 1:
+					gen.Emit(OpCodes.Ldarg_1);
+					break;
+				case 2:
+					gen.Emit(OpCodes.Ldarg_2);
+					break;
+				case 3:
+					gen.Emit(OpCodes.Ldarg_3);
+					break;
+				default:
+					if (idx < byte.MaxValue)
+						gen.Emit(OpCodes.Ldarg_S, (byte)idx);
+					else
+						gen.Emit(OpCodes.Ldarg, idx);
+					break;
+			}
+		}
+
+		public static void StoreParameter(this ILGenerator gen, int idx)
+		{
+			if (idx < byte.MaxValue)
+				gen.Emit(OpCodes.Starg_S, (byte)idx);
+			else
+				gen.Emit(OpCodes.Starg, idx);
+		}
+
+		public static void LoadParameterAddress(this ILGenerator gen, int idx)
+		{
+			if (idx < byte.MaxValue)
+				gen.Emit(OpCodes.Ldarga_S, (byte)idx);
+			else
+				gen.Emit(OpCodes.Ldarga, idx);
+		}
+
 		public static void LoadInt(this ILGenerator gen, ulong value, byte size, bool signed)
 		{
 			bool needsConvToLong = false;

@@ -38,6 +38,7 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArrayExtensions.cs" />
     <Compile Include="ExtensionAttribute.cs" />
     <Compile Include="Func.cs" />
     <Compile Include="IEnumerableExtensions.cs" />

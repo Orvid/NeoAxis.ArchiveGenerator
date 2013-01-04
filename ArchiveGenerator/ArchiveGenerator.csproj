@@ -56,6 +56,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccessWorkarounds.cs" />
+    <Compile Include="Compression.cs" />
+    <Compile Include="CStyleMinifier.cs" />
+    <Compile Include="DecompressionEmitter.cs" />
     <Compile Include="ExtensionAttribute.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="GeneratorOptions.cs" />
@@ -70,6 +73,10 @@
     <ProjectReference Include="..\Orvid.Config\Orvid.Config.csproj">
       <Project>{43D75354-6930-4D7F-8D7C-9D9BEB36BA5D}</Project>
       <Name>Orvid.Config</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Orvid.Linq\Orvid.Linq.csproj">
+      <Project>{5D681A24-AFB1-4F2C-B377-EFD79CC3AFBF}</Project>
+      <Name>Orvid.Linq</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

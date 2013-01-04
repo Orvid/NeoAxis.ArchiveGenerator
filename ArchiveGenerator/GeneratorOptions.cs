@@ -180,18 +180,25 @@ namespace ArchiveGenerator
 
 			[Configure]
 			[Alias(
-				"minify",
 				"min"
 			)]
-			[Description("If true, characters that aren't required are removed from files that are serialized.")]
+			[Description("If true, characters that aren't required are removed from some types of files.")]
+			[DefaultValue(false)]
+			public bool Minify;
+
+			[Configure]
+			[Alias(
+				"compress"
+			)]
+			[Description("If true, text files will be compressed with LZF.")]
 			[DefaultValue(true)]
-			public bool MinifySerialized;
+			public bool CompressText;
 
 			[Configure]
 			[Alias(
 				"ordered"
 			)]
-			[Description("If true, files will be stored in the archive in such a way that files of the same type end up next to each other, making the resulting archive more compressable.")]
+			[Description("If true, files will be stored in the archive in such a way that files of the same type end up next to each other, making the resulting archive more compressible.")]
 			[DefaultValue(true)]
             public bool OrderedEmit;
 

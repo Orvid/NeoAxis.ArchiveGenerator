@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ArchiveGenerator
 {
-	public static class SerializedCleaner
+	public static class NeoAxisSerializedFileMinifier
 	{
 		private enum SerialState : byte
 		{
@@ -16,11 +16,12 @@ namespace ArchiveGenerator
 			Node,
 		}
 
-		public static Stream CleanFile(Stream src)
+		public static Stream Minify(Stream src)
 		{
 			MemoryStream ret = new MemoryStream((int)src.Length);
 			SerialState stat = SerialState.Unknown;
 			bool spaceStarted = false;
+			bool fromAttribute = false;
 			int val = -1;
 			while ((val = src.ReadByte()) != -1)
 			{
@@ -35,6 +36,7 @@ namespace ArchiveGenerator
 							case '\n':
 								break;
 							case '/':
+								fromAttribute = false;
 								stat = SerialState.MaybeComment;
 								break;
 							default:
@@ -52,7 +54,16 @@ namespace ArchiveGenerator
 								stat = SerialState.Comment;
 								break;
 							default:
-								throw new Exception("Unexpected '/' character in the data stream!");
+								if (!fromAttribute)
+									throw new Exception("Unexpected '/' character in the data stream!");
+								else
+								{
+									stat = SerialState.AttributeEnd;
+									ret.WriteByte((byte)'/');
+									src.Position--;
+									src.Flush();
+									break;
+								}
 						}
 						break;
 
@@ -61,7 +72,16 @@ namespace ArchiveGenerator
 						{
 							case '\r':
 							case '\n':
-								stat = SerialState.Unknown;
+								if (fromAttribute)
+								{
+									stat = SerialState.AttributeEnd;
+									src.Position--;
+									src.Flush();
+								}
+								else
+								{
+									stat = SerialState.Unknown;
+								}
 								break;
 							default:
 								break;
@@ -120,6 +140,10 @@ namespace ArchiveGenerator
 					case SerialState.AttributeEnd:
 						switch ((char)val)
 						{
+							case '/':
+								fromAttribute = true;
+								stat = SerialState.MaybeComment;
+								break;
 							case '\r':
 							case '\n':
 								stat = SerialState.Unknown;
