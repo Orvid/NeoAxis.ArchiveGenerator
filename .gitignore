@@ -1,10 +1,13 @@
 .suo
 .csproj.user
+/ipch
 ArchiveProfile.app7
 bin
 obj
 NonCommercialLicense.sln
 NonCommercialLicense.suo
+NonCommercialLicense.sdf
+NonCommercialLicense.opensdf
 /ChatExample
 /DedicatedServer
 /Game
