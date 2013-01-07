@@ -17,6 +17,7 @@ NonCommercialLicense.opensdf
 /GameEntities.Editor
 /MonoRuntimeLauncher
 /NeoAxisDeobfuscator
+/NeoAxisVirtualFileSystemExtractor
 /MyNativeDLL
 /WinFormsAppExample
 /WinFormsMultiViewAppExample
